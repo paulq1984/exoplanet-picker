@@ -112,6 +112,7 @@ function ExoplanetCard ({planets}) {
             className='card'
           >
             <h3>{planet.name}</h3>
+            <h2>{planet.discoveryYear}</h2>
           </div>
         </TinderCard>
       ))}
