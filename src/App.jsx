@@ -21,6 +21,7 @@ function App() {
 
   return (
     <div className='app'>
+      <div className="stars"></div>
       {isLoading && <div><h2>Getting Exoplanets</h2></div>}
       {planets && <ExoplanetCard planets={planets}/>}
     </div>
