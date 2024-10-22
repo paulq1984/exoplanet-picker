@@ -131,16 +131,16 @@ function ExoplanetCard ({planets}) {
       )}
 
 {currentIndex >= 0 ? (
-  <div>
+  <div className="lowerSection">
         <div>
-        {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+       
                     <input
             type="text"
             value={reason}
             placeholder='Enter Reason for swipe'
             onChange={(e) => setReason(e.target.value)}
           />
-           
+            {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
         </div>
         <div className='buttons'>
           <button style={{ backgroundColor: !canSwipe && '#c3c4d3' }} onClick={() => swipe('left')}>
