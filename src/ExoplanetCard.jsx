@@ -10,6 +10,8 @@ function ExoplanetCard ({planets}) {
   const [noPlanets, setNoPlanets] = useState([])
   const [yesPlanets, setYesPlanets] = useState([])
 
+  const [reason, setReason] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
   const currentIndexRef = useRef(currentIndex)
 
   const childRefs = useMemo(
@@ -17,7 +19,7 @@ function ExoplanetCard ({planets}) {
       Array(planets.length)
         .fill(0)
         .map(() => React.createRef()),
-    [planets.length]
+    []
   )
 
   const updateCurrentIndex = (val) => {
@@ -25,36 +27,38 @@ function ExoplanetCard ({planets}) {
     currentIndexRef.current = val
   }
 
-  const canGoBack = currentIndex < planets.length - 1
-
   const canSwipe = currentIndex >= 0
 
   const swiped = (direction, planet, index) => {
+    console.log("Swiped")
     setLastDirection(direction)
     updateCurrentIndex(index - 1)
-    if (direction === 'left') {
-      setNoPlanets((prev) => [...prev, planet])
-    } else if (direction == 'right') {
-      setYesPlanets((prev) => [...prev, planet])
-    }
-  }
 
-  const outOfFrame = (name, idx) => {
-    console.log(`${name} (${idx}) left the screen!`, currentIndexRef.current)
-    currentIndexRef.current >= idx && childRefs[idx].current.restoreCard()
+
+    const swipedData = {planet, reason}
+
+    if (direction === 'left') {
+      setNoPlanets((prev) => [...prev, swipedData])
+    } else if (direction == 'right') {
+      setYesPlanets((prev) => [...prev, swipedData])
+    }
+
+    setReason('')
   }
 
   const swipe = async (dir) => {
+    console.log(swipe)
+    if (!reason.trim()) {
+      setErrorMessage('Please enter a reason before swiping!')
+      return
+    }
+
+    setErrorMessage('')
+
     if (canSwipe && currentIndex < planets.length) {
       await childRefs[currentIndex].current.swipe(dir)
+      swiped(dir, planets[currentIndex], currentIndex)
     }
-  }
-
-  const goBack = async () => {
-    if (!canGoBack) return
-    const newIndex = currentIndex + 1
-    updateCurrentIndex(newIndex)
-    await childRefs[newIndex].current.restoreCard()
   }
 
   const restart = async () => {
@@ -68,6 +72,8 @@ function ExoplanetCard ({planets}) {
     setNoPlanets([])
     setYesPlanets([])
     setLastDirection(null)
+    setReason('')
+    setErrorMessage('')
   }
 
   const downloadPlanetLists = () => {
@@ -77,8 +83,8 @@ function ExoplanetCard ({planets}) {
     if (noPlanets.length > 0) {
       doc.setFontSize(14)
       doc.text('No Exoplanets:', 14, 22);
-      noPlanets.forEach((planet, index) => {
-        doc.text(`${planet.name}`, 14, 30 + index * 10)
+      noPlanets.forEach((entry, index) => {
+        doc.text(`${entry.planet.name} = Reason: ${entry.reason || 'No reason provided'}`, 14, 30 + index * 10)
       })
     }
 
@@ -86,8 +92,8 @@ function ExoplanetCard ({planets}) {
       doc.addPage()
       doc.setFontSize(14)
       doc.text('Yes Exoplanets:', 14, 22)
-      yesPlanets.forEach((planet, index) => {
-        doc.text(`${planet.name}`, 14, 30 + index * 10)
+      yesPlanets.forEach((entry, index) => {
+        doc.text(`${entry.planet.name} - Reason: ${entry.reason || 'No reason provided'}`, 14, 30 + index * 10)
       })
     }
 
@@ -104,9 +110,9 @@ function ExoplanetCard ({planets}) {
           ref={childRefs[index]}
           className='swipe'
           key={planet.id}
-          onSwipe={(dir) => swiped(dir, planet, index)}
-          onCardLeftScreen={() => outOfFrame(planet.id, index)}
-          onCardRightScreen={() => outOfFrame(planet.id, index)}
+          onCardLeftScreen={() => {}}
+          preventSwipe={['up', 'down', 'left', 'right']}
+         
         >
           <div
             className='card'
@@ -125,16 +131,25 @@ function ExoplanetCard ({planets}) {
       )}
 
 {currentIndex >= 0 ? (
+  <div>
+        <div>
+        {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+                    <input
+            type="text"
+            value={reason}
+            placeholder='Enter Reason for swipe'
+            onChange={(e) => setReason(e.target.value)}
+          />
+           
+        </div>
         <div className='buttons'>
           <button style={{ backgroundColor: !canSwipe && '#c3c4d3' }} onClick={() => swipe('left')}>
             Swipe left!
           </button>
-          <button style={{ backgroundColor: !canGoBack && '#c3c4d3' }} onClick={() => goBack()}>
-            Undo swipe!
-          </button>
           <button style={{ backgroundColor: !canSwipe && '#c3c4d3' }} onClick={() => swipe('right')}>
             Swipe right!
           </button>
+        </div>
         </div>
       ) : <div className='buttons'>
           <button onClick={() => restart()}>Reset</button>
@@ -154,9 +169,9 @@ function ExoplanetCard ({planets}) {
       <div>
       <h2>No Planets</h2>
       <ul>
-        {noPlanets.map((planet, idx) => (
+        {noPlanets.map((entry, idx) => (
           <li key={idx}>
-            {planet.name}
+            {entry.planet.name}
           </li>
         ))}
       </ul>
@@ -164,9 +179,9 @@ function ExoplanetCard ({planets}) {
     <div>
       <h2>Yes Planets</h2>
       <ul>
-        {yesPlanets.map((planet, idx) => (
+        {yesPlanets.map((entry, idx) => (
           <li key={idx}>
-          {planet.name}</li>
+          {entry.planet.name}</li>
         ))}
       </ul>
     </div>
